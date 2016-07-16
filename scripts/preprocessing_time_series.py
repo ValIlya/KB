@@ -17,6 +17,13 @@ import codecs
 
 SPLITS = [['Producto_ID'], ['Producto_ID', 'Ruta_SAK'], ['Producto_ID', 'Cliente_ID', 'Agencia_ID']]
 
+LAG_COLUMNS = [u'Venta_uni_hoy', u'Venta_hoy', u'Dev_uni_proxima',
+       u'Dev_proxima', u'Demanda_uni_equil', u'Dev_proxima_by_uni', u'No_remains',
+       u'Venta_hoy_by_uni', u'Ordered', u'Log_Demanda', u'Median_Producto_ID',
+       u'LogMean_Producto_ID', u'Median_Producto_ID_Ruta_SAK',
+       u'LogMean_Producto_ID_Ruta_SAK',
+       u'Median_Producto_ID_Cliente_ID_Agencia_ID',
+       u'LogMean_Producto_ID_Cliente_ID_Agencia_ID']
 
 def working_dir():
     if 'ilya' in os.getcwd():
@@ -141,7 +148,7 @@ def lag_generation(df, n_lags=5):
     indexers = [u'Semana', u'Agencia_ID', u'Canal_ID',
                 u'Ruta_SAK', u'Cliente_ID', u'Producto_ID']
 
-    lag_columns = [x for x in df.columns if (df[x].dtype.name != 'object') and (x not in indexers)]
+    lag_columns = LAG_COLUMNS
 
     df_lagged = df.copy()
 
@@ -159,17 +166,12 @@ def lag_generation(df, n_lags=5):
 def preproc_timeseries(states=None, train=True):
     if train:
         # df = select_states(states)
-
         filelist = os.listdir(working_dir() + 'States/')
         assert len(filelist) > 0, 'run data_split_by_state.py first'
         df_list = []
         for state in states:
             df_list.append(pd.read_csv(working_dir() + 'States/' + state))
-
         df = pd.concat(df_list, axis=0)
-
-
-
     else:
         df = pd.read_csv(working_dir() + "test.csv")
         print('Data read')
