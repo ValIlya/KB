@@ -49,8 +49,6 @@ def text_encoding(data):
     return data
 
 
-
-
 def data_split_by_state():
 
     out_dir = working_dir() + 'States/'
@@ -87,7 +85,6 @@ def data_split_by_state():
             out_files[state].write(line)
         else:
             print (agency, 'not in agency list')
-
 
     print('Data read complete')
 
