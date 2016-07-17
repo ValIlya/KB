@@ -116,7 +116,7 @@ if __name__ == '__main__':
         os.makedirs(out_dir)
 
     town = text_encoding(town_preproc())
-    states = town.State.unique()[1:]
+    states = town.State.unique()
     for i, state in enumerate(states):
         state = [state]
         data_train = preproc(states=state)
