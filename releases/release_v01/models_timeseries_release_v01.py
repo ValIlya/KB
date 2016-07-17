@@ -85,5 +85,13 @@ if __name__ == '__main__':
 
         print('%s saved, %d to go, time:' % (state, len(states) - i - 1), datetime.datetime.now() - start_time)
 
-
-
+    print('Final submit generating')
+    state_files = ['Predictions/release_v01/Prediction_%s_v01.csv' % state for state in states]
+    test_states = pd.concat([pd.read_csv(f, index_col=0) for f in state_files])
+    test_data = pd.merge(data_test, test_states, how='left', right_index=True, left_index=True)
+    pivot = test_data.groupby('Agencia_ID').Log_Demanda.apply(lambda ser: ser.isnull().mean())
+    assert ((pivot>0).sum() == 0), 'Not all id were predicted'
+    test_data['Demanda_uni_equil'] = test_data.Log_Demanda.apply(np.expm1)
+    test_data.index.name = 'id'
+    test_data[['Demanda_uni_equil']].to_csv('Predictions/release_v01/Prediction_v01.csv')
+    print('Final submit saved')
