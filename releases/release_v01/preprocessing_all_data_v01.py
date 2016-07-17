@@ -118,7 +118,6 @@ if __name__ == '__main__':
     town = text_encoding(town_preproc())
     states = town.State.unique()
     for i, state in enumerate(states):
-        state = [state]
-        data_train = preproc(states=state)
-        data_train.to_csv('%strain_%s.csv' % (out_dir, state[0]), index=False)
-        print('%s saved, %d to go' % (state[0], len(states) - i - 1))
+        data_train = preproc(states=[state])
+        data_train.to_csv('%strain_%s.csv' % (out_dir, state), index=False)
+        print('%s saved, %d to go' % (state, len(states) - i - 1))
