@@ -21,7 +21,7 @@ def working_dir():
     if 'ilya' in os.getcwd():
         directory = '/Users/ilya/Documents/Kaggle_Bimbo/'
     elif 'romul' in os.getcwd():
-        os.chdir('/home/romul/kaggle/Bimbo/')
+        directory = '/home/romul/kaggle/Bimbo/'
     else:
         directory = '/Users/margarita/Kaggle/Bimbo/'
 
