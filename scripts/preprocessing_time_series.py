@@ -37,6 +37,7 @@ def working_dir():
 
 
 def select_random_rows(seed=0):
+    "Deprecated"
     np.random.seed(seed)
     n = 74180465  # number of records in file
     s = 1 * 10 ** 6  # desired sample size
@@ -47,6 +48,7 @@ def select_random_rows(seed=0):
 
 
 def select_states(states):
+    "Deprecated"
     town = text_encoding(town_preproc())
     agencies = set([str(int(i)) for i in town.loc[town.State.isin(states)].index])
 
@@ -104,6 +106,7 @@ def volumes_preproc(data):
         data['No_remains'] = data.Dev_uni_proxima.apply(np.sign)
     if 'Venta_hoy' in data.columns:
         data['Venta_hoy_by_uni'] = data.Venta_hoy / data.Venta_uni_hoy
+        data['Log_Venta_uni_hoy'] = data.Venta_uni_hoy.apply(np.log1p)
         data['Ordered'] = data.Venta_uni_hoy.apply(np.sign)
     if 'Demanda_uni_equil' in data.columns:
         data['Log_Demanda'] = data.Demanda_uni_equil.apply(np.log1p)
