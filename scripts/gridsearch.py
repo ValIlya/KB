@@ -7,15 +7,22 @@ from sklearn.base import clone
 
 class GridSearch():
     
-    def __init__(self, estimator, param_grid):
-        self.estimator = estimator
+    def __init__(self, estimator, param_grid, verbose=0):
+        self.estimator = clone(estimator)
         self.param_grid = param_grid
+        self.verbose = verbose
 
     
     def fit(self, X_train, X_test, y_train, y_test):
         self.best_score_ = np.inf
         self.grid_scores_ = []
-        for param in ParameterGrid(self.param_grid):
+
+        parameter_grid = ParameterGrid(self.param_grid)
+
+        if self.verbose:
+            print ("Fitting %d candidates"%len(parameter_grid))
+
+        for i, param in enumerate(parameter_grid):
             estimator = clone(self.estimator)
             estimator.set_params(**param)
             estimator.fit(X_train, y_train)
@@ -23,6 +30,9 @@ class GridSearch():
             # пока только rmse, потом если надо добавлю нормальный scoring
             score = np.sqrt(mean_squared_error(y_test, estimator.predict(X_test)))
             self.grid_scores_.append("score: %f, params: %s"%(score, str(param)))
+
+            if self.verbose:
+                print (i, self.grid_scores_[-1])
             
             if score < self.best_score_:
                 self.best_score_ = score
