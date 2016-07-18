@@ -28,16 +28,18 @@ class GridSearch():
             estimator.fit(X_train, y_train)
         
             # пока только rmse, потом если надо добавлю нормальный scoring
-            score = np.sqrt(mean_squared_error(y_test, estimator.predict(X_test)))
-            self.grid_scores_.append("score: %f, params: %s"%(score, str(param)))
+            test_score = np.sqrt(mean_squared_error(y_test, estimator.predict(X_test)))
+            train_score = np.sqrt(mean_squared_error(y_train, estimator.predict(X_train)))
+            self.grid_scores_.append("test score: %f, train score: %f, params: %s"
+                                        %(test_score, train_score, str(param)))
 
             if self.verbose:
-                print (i, self.grid_scores_[-1])
+                print ("%d %s"%(i ,self.grid_scores_[-1]))
             
-            if score < self.best_score_:
-                self.best_score_ = score
+            if test_score < self.best_score_:
+                self.best_score_ = test_score
                 self.best_params_ = param
                 self.best_estimator_ = estimator
                 
-    def predict(X):
+    def predict(self, X):
         return self.best_estimator_.predict(X)
