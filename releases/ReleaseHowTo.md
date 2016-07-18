@@ -9,4 +9,9 @@
 
 Качество на лидерборде: 0.55233
 
-Адекватная оценка ошибки получается при прогнозе на 8 и 9 неделю: [models_timeseries_release_v01_2.py](release_v01/models_timeseries_release_v01_2.py)
+Адекватная оценка ошибки получается при прогнозе на 8 и 9 неделю: 
+[models_timeseries_release_v01_2.ipynb](../models/models_timeseries_release_v01_2.ipynb)
+
+##2 релиз: Средние за предыдущие 5 недель, средние по нескольким неделям сразу (wide lags), новые сплиты
+
+* [preprocessing_all_data_v02.py](release_v02/preprocessing_all_data_v02.py) - собирает средние логарифмов, приклеивает тест-сет, лаги и сохраняем
