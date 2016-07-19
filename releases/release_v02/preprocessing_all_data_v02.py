@@ -1,21 +1,15 @@
 # -*- coding: utf-8 -*-
-"""
-Preprocessing for data
 
-Created on Sun Jun 19 15:28:26 2016
-
-@author: ilya
-"""
 from __future__ import print_function
 from __future__ import division
 import numpy as np
 import pandas as pd
-import re
 import os
 import unicodedata
-import codecs
 
-SPLITS = [['Producto_ID'], ['Producto_ID', 'Ruta_SAK'], ['Producto_ID', 'Cliente_ID', 'Agencia_ID']]
+# State included in every split by design
+SPLITS = [['Producto_ID', 'Ruta_SAK'], ['Producto_ID', 'Cliente_ID', 'Ruta_SAK'],
+          ['Producto_ID', 'Cliente_ID', 'Agencia_ID'], ['brand', 'Cliente_ID', 'Agencia_ID']]
 
 def working_dir():
     if 'ilya' in os.getcwd():
@@ -76,6 +70,24 @@ def text_encoding(data):
 
             data[c] = data[c].apply(lambda x: d_enc.get(x, x))
     return data
+
+def products_preproc():
+    products = pd.read_csv(working_dir() + 'producto_tabla.csv', index_col=0)
+    products['brand'] = products.NombreProducto.str.extract('^.+\s(\D+) \d+$', expand=False)
+    products['brand'] = products['brand'].astype(str).astype('category').cat.codes # integers from categories
+    w = products.NombreProducto.str.extract('(\d+)(Kg|g)', expand=True)
+    products['weight'] = w[0].astype('float') * w[1].map({'Kg': 1000, 'g': 1})
+    products['pieces'] = products.NombreProducto.str.extract('(\d+)p ', expand=False).astype('float')
+
+    # products['Has_choco'] = products['NombreProducto'].apply(lambda s: int(re.search("Choco", s) is not None))
+    # products['Has_vanilla'] = products['NombreProducto'].apply(lambda s: int(re.search("Va(i)?nilla", s) is not None))
+    # products['Has_multigrano'] = products['NombreProducto'].apply(lambda s: int(re.search("Multigrano", s) is not None))
+
+    # products.drop('NombreProducto', axis=1, inplace=True)
+
+    products = products[['brand', 'weight', 'pieces']]
+
+    return products
 
 def lag_generation(df, n_lags=4, max_width = 4):
     indexers = [u'Semana', u'Agencia_ID', u'Canal_ID',
@@ -139,8 +151,9 @@ def preproc(states=None, train=True):
         print('Data read')
 
     town = town_preproc()
+    products = products_preproc()
     data_train = pd.merge(df, town, 'left', left_on='Agencia_ID', right_index=True)
-
+    data_train = pd.merge(data_train, products, 'left', left_on='Producto_ID', right_index=True)
 
     data_train = volumes_preproc(data_train)
 
@@ -166,7 +179,7 @@ if __name__ == '__main__':
         os.makedirs(out_dir)
 
     town = text_encoding(town_preproc())
-    states = town.State.unique()[2:7]
+    states = town.State.unique()[4:7]
     for i, state in enumerate(states):
         data_train = preproc(states=[state])
         data_train.to_csv('%strain_%s.csv' % (out_dir, state), index=False)
