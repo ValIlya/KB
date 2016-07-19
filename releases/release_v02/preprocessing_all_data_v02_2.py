@@ -124,16 +124,17 @@ def wide_lag_generation(df, width_range, lag_columns):
     df_lag_part.Semana = df_lag_part.Semana + 1
     df_lag = df_lag_part[indexers+lag_columns]
 
-    for lag_width in range(width_range[0], width_range[1] + 1):
+    for lag_width in range(2, width_range[1] + 1):
         # every time
         df_lag_part = df.copy()
         df_lag_part.Semana = df_lag_part.Semana + lag_width
         df_lag_part = df_lag_part.loc[df_lag_part.Semana.isin(set(range(3, 12))), indexers+lag_columns]
 
         df_lag = pd.concat([df_lag, df_lag_part], axis=0)
-        aggregates = df_lag.groupby(indexers).mean().rename(columns=dict([(value, '%s_%dlast' % (value, lag_width)) for value in df_lag.columns]))
-        df_lagged = pd.merge(df_lagged, aggregates, 'left', left_on=indexers, right_index=True)
-        print('%d-wide lag done' % lag_width)
+        if lag_width >= width_range[0]:
+            aggregates = df_lag.groupby(indexers).mean().rename(columns=dict([(value, '%s_%dlast' % (value, lag_width)) for value in df_lag.columns]))
+            df_lagged = pd.merge(df_lagged, aggregates, 'left', left_on=indexers, right_index=True)
+            print('%d-wide lag done' % lag_width)
 
     return df_lagged
 
