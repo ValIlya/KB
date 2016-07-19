@@ -16,4 +16,5 @@
 
 * [preprocessing_all_data_v02.py](release_v02/preprocessing_all_data_v02.py) - собирает средние логарифмов, приклеивает тест-сет, лаги и сохраняем
 * [preprocessing_all_data_v02_2.py](release_v02/preprocessing_all_data_v02_2.py) - меньше лагов и сплитов, оставлены самые важные
+* [preprocessing_all_data_v02_prod.py](release_v02/preprocessing_all_data_v02_prod.py) - здесь оставим только топ50 для модели
 * [rf_feature_importance_v02.ipynb](release_v02/rf_feature_importance_v02.ipynb) - оценка качества фичей
