@@ -44,9 +44,9 @@ def model_building(data, feat_week10, feat_week11):
 
     param1 = {
         'learning_rate': 0.3,
-        'gamma': 1,
-        'max_depth': 16,
-        'min_child_weight': 18,
+        'gamma': 0,
+        'max_depth': 10,
+        'min_child_weight': 22,
         'n_estimators': 100,
         'subsample': 0.8,
         'colsample_bytree': 0.8
@@ -54,9 +54,9 @@ def model_building(data, feat_week10, feat_week11):
 
     param2 = {
         'learning_rate': 0.3,
-        'gamma': 1,
-        'max_depth': 16,
-        'min_child_weight': 18,
+        'gamma': 0,
+        'max_depth': 10,
+        'min_child_weight': 24,
         'n_estimators': 100,
         'subsample': 0.8,
         'colsample_bytree': 0.8
