@@ -8,8 +8,8 @@ import os
 import unicodedata
 
 # State included in every split by design
-SPLITS = [['Producto_ID', 'Ruta_SAK'], ['Producto_ID', 'Cliente_ID', 'Ruta_SAK'],
-          ['Producto_ID', 'Cliente_ID', 'Agencia_ID'], ['brand', 'Cliente_ID', 'Agencia_ID']]
+SPLITS = [['Producto_ID', 'Cliente_ID', 'Ruta_SAK'],
+          ['Producto_ID', 'Cliente_ID', 'Agencia_ID']]
 
 def working_dir():
     if 'ilya' in os.getcwd():
@@ -89,7 +89,7 @@ def products_preproc():
 
     return products
 
-def lag_generation(df, n_lags=4, max_width = 4):
+def lag_generation(df, n_lags=3, widths = [3, 4]):
     indexers = [u'Semana', u'Agencia_ID', u'Canal_ID',
                 u'Ruta_SAK', u'Cliente_ID', u'Producto_ID']
 
@@ -107,12 +107,12 @@ def lag_generation(df, n_lags=4, max_width = 4):
         df_lagged = pd.merge(df_lagged, df_lag, 'left', left_on=indexers, right_index=True)
         print(lag, 'lag done')
 
-    df_lagged = wide_lag_generation(df_lagged, max_width, lag_columns)
+    df_lagged = wide_lag_generation(df_lagged, widths, lag_columns)
 
     return df_lagged
 
 
-def wide_lag_generation(df, max_lag_width, lag_columns):
+def wide_lag_generation(df, width_range, lag_columns):
     # means trought several weeks
 
     indexers = [u'Semana', u'Agencia_ID', u'Canal_ID',
@@ -124,7 +124,7 @@ def wide_lag_generation(df, max_lag_width, lag_columns):
     df_lag_part.Semana = df_lag_part.Semana + 1
     df_lag = df_lag_part[indexers+lag_columns]
 
-    for lag_width in range(2, max_lag_width + 1):
+    for lag_width in range(width_range[0], width_range[1] + 1):
         # every time
         df_lag_part = df.copy()
         df_lag_part.Semana = df_lag_part.Semana + lag_width
@@ -179,7 +179,7 @@ if __name__ == '__main__':
         os.makedirs(out_dir)
 
     town = text_encoding(town_preproc())
-    states = town.State.unique()[3:7]
+    states = town.State.unique()[4:7]
     for i, state in enumerate(states):
         data_train = preproc(states=[state])
         data_train.to_csv('%strain_%s.csv' % (out_dir, state), index=False)
