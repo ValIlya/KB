@@ -8,8 +8,18 @@ import os
 import unicodedata
 
 # State included in every split by design
-SPLITS = [['Producto_ID', 'Cliente_ID', 'Ruta_SAK'],
-          ['Producto_ID', 'Cliente_ID', 'Agencia_ID']]
+SPLITS = [['Producto_ID', 'Cliente_ID', 'Canal_ID', 'Agencia_ID', 'Ruta_SAK'],
+              ['Producto_ID', 'Cliente_ID', 'Canal_ID', 'Agencia_ID'],
+              ['Producto_ID', 'Cliente_ID', 'Canal_ID', 'Ruta_SAK'],
+              ['Producto_ID', 'Cliente_ID', 'Agencia_ID', 'Ruta_SAK'],
+              ['Producto_ID', 'Canal_ID', 'Agencia_ID', 'Ruta_SAK'],
+              ['Cliente_ID', 'Canal_ID', 'Agencia_ID', 'Ruta_SAK'],
+
+              ['Producto_ID', 'Cliente_ID', 'Ruta_SAK'],
+              ['Producto_ID', 'Cliente_ID', 'Agencia_ID'],
+              ['Producto_ID', 'Ruta_SAK'],
+              ['brand', 'Cliente_ID', 'Ruta_SAK', 'Agencia_ID'],
+              ['Producto_ID', 'Cliente_ID', 'Town']]
 
 def working_dir():
     if 'ilya' in os.getcwd():
@@ -33,11 +43,12 @@ def volumes_preproc(data):
         data['Log_Dev_proxima'] = data.Dev_proxima.apply(np.sign)
         data['Log_Dev_uni_proxima'] = data.Dev_uni_proxima.apply(np.sign)
         data['No_remains'] = data.Dev_uni_proxima.apply(np.sign)
+        data.drop('Dev_uni_proxima',axis=1,inplace=True)
     if 'Venta_hoy' in data.columns:
         data['Venta_hoy_by_uni'] = data.Venta_hoy / data.Venta_uni_hoy
         data['Log_Venta_hoy'] = data.Venta_hoy.apply(np.sign)
-        data['Log_Venta_uni_hoy'] = data.Venta_uni_hoy.apply(np.sign)
-        data['Ordered'] = data.Venta_uni_hoy.apply(np.sign)
+        # data['Log_Venta_uni_hoy'] = data.Venta_uni_hoy.apply(np.sign)
+        # data['Ordered'] = data.Venta_uni_hoy.apply(np.sign)
     if 'Demanda_uni_equil' in data.columns:
         data['Log_Demanda'] = data.Demanda_uni_equil.apply(np.log1p)
         data = logmeans_compute(data)
@@ -47,6 +58,7 @@ def volumes_preproc(data):
 def logmeans_compute(data, splits=SPLITS):
     for split in splits:
         raw_cols = ['Log_Demanda', 'Log_Venta_uni_hoy', 'No_remains', 'Ordered']
+        raw_cols = [x for x in raw_cols if x in data.columns]
         group = data[split + raw_cols].groupby(split)
         aggregates = pd.DataFrame()
         for field in raw_cols:
@@ -89,7 +101,7 @@ def products_preproc():
 
     return products
 
-def lag_generation(df, n_lags=3, widths = [3, 4]):
+def lag_generation(df, n_lags=5, widths = [3, 6]):
     indexers = [u'Semana', u'Agencia_ID', u'Canal_ID',
                 u'Ruta_SAK', u'Cliente_ID', u'Producto_ID']
 
@@ -118,6 +130,7 @@ def wide_lag_generation(df, width_range, lag_columns):
     indexers = [u'Semana', u'Agencia_ID', u'Canal_ID',
                     u'Ruta_SAK', u'Cliente_ID', u'Producto_ID']
 
+
     df_lagged = df
     #first is a necessary base part - previous week
     df_lag_part = df.copy()
@@ -131,13 +144,27 @@ def wide_lag_generation(df, width_range, lag_columns):
         # every time add shifted semana to df_lag, then aggregate
         df_lag = pd.concat([df_lag, df_lag_part], axis=0)
         if lag_width >= width_range[0]:
-            aggregates = df_lag.groupby(indexers).mean().rename(columns=dict([(value, '%s_%dlast' % (value, lag_width)) for value in df_lag.columns]))
+
+            # mean over previous n weeks
+            aggregates = df_lag.groupby(indexers).mean().rename(columns=dict([(value, '%s_%dmean' % (value, lag_width)) for value in df_lag.columns]))
             df_lagged = pd.merge(df_lagged, aggregates, 'left', left_on=indexers, right_index=True)
+
+            # last over previous n weeks
+            # last_cols = pd.DataFrame()
+            # for c in lag_columns:
+            #     last = df_lag.groupby(indexers[1:])[indexers[0], c].apply(lambda df: df.dropna(subset=[c]).groupby(indexers[0]).last())
+            #     # last.index = last.index.droplevel(-1)
+            #     print(last.head())
+            #     last_cols['%s_%dlast' % (c, lag_width)] = last
+            #
+            # df_lagged = pd.merge(df_lagged, last_cols, 'left', left_on=indexers, right_index=True)
             print('%d-wide lag done' % lag_width)
 
     return df_lagged
 
 def preproc(states=None, train=True):
+    global town
+    town = text_encoding(town_preproc())
     if train:
         # df = select_states(states)
         filelist = os.listdir(working_dir() + 'States/')
@@ -150,7 +177,6 @@ def preproc(states=None, train=True):
         df = pd.read_csv(working_dir() + "test.csv")
         print('Data read')
 
-    town = town_preproc()
     products = products_preproc()
     data_train = pd.merge(df, town, 'left', left_on='Agencia_ID', right_index=True)
     data_train = pd.merge(data_train, products, 'left', left_on='Producto_ID', right_index=True)

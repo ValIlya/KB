@@ -16,3 +16,5 @@
 0. data_exploration.ipynb - графики, которые первые пришли в голову при обзоре переменных
 0. models_timeseries.ipynb - моделька с использованием лагов
 0. product_clustering.ipynb - кластеризация продуктов
+0. [how_to_find_strong_features.ipynb](how_to_find_strong_features.ipynb) - поиск хороших сплитов
+0. [how_to_preprocess_only_strong_features.ipynb](how_to_preprocess_only_strong_features.ipynb) -  отбор трансофрмаций для генерации фич по всем штатам
