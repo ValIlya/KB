@@ -93,7 +93,7 @@ if __name__ == '__main__':
 
     start_time = datetime.datetime.now()
 
-    states = ['Queretaro de Arteaga'] #town.State.unique()
+    states = town.State.unique()
     for i, state in enumerate(states):
         data = data_brush_for_model(state)
         print(state, 'read')
