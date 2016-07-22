@@ -27,13 +27,14 @@ def data_brush_for_model(state):
 
     means_by_split = [x for x in data_train.columns if
                       'Mean' in x and not (x[-2] == '_' or x[-4:] == 'last')]  # its mean, its not a lag
-    data = data_train.drop([u'Town', u'State', u'Venta_uni_hoy', u'Venta_hoy', u'Dev_uni_proxima',
+    data = data_train.drop([u'Venta_uni_hoy', u'Venta_hoy',
                                       u'Dev_proxima', u'Demanda_uni_equil', u'Dev_proxima_by_uni', u'No_remains',
-                                      u'Venta_hoy_by_uni', u'Ordered'] + means_by_split, axis=1).set_index(u'Semana')
+                                      u'Venta_hoy_by_uni'] + means_by_split, axis=1).set_index(u'Semana', append=True)
+    data = data.swaplevel(i=0, j=-1, axis=0)
 
     return data
 
-def model_building(data, feat_week10, feat_week11):
+def model_building(data):
 
     X_train = data.loc[~data.Log_Demanda.isnull(),:].drop('Log_Demanda', axis=1)
     y_train = data.loc[~data.Log_Demanda.isnull(),'Log_Demanda']
@@ -64,14 +65,14 @@ def model_building(data, feat_week10, feat_week11):
 
     xgb_model = xgb.XGBRegressor()
     xgb_model.set_params(**param1)
-    xgb_model.fit(X_train[feat_week10], y_train)
+    xgb_model.fit(X_train, y_train)
 
     xgb_model2 = xgb.XGBRegressor()
     xgb_model2.set_params(**param2)
-    xgb_model2.fit(X_train2[feat_week11], y_train)
+    xgb_model2.fit(X_train2, y_train)
 
-    y_eval10 = pd.Series(xgb_model.predict(X_eval.loc[10, :][feat_week10]), index=X_eval.loc[10, :].index)
-    y_eval11 = pd.Series(xgb_model2.predict(X_eval2.loc[11, :][feat_week11]), index=X_eval2.loc[11, :].index)
+    y_eval10 = pd.Series(xgb_model.predict(X_eval.loc[10, :]), index=X_eval.loc[10, :].index)
+    y_eval11 = pd.Series(xgb_model2.predict(X_eval2.loc[11, :]), index=X_eval2.loc[11, :].index)
     y_eval = pd.concat([y_eval10, y_eval11], axis=0).to_frame('Log_Demanda')
 
     return y_eval, xgb_model, xgb_model2
@@ -89,19 +90,14 @@ if __name__ == '__main__':
     if not os.path.exists('Predictions/models_v02'):
         os.makedirs('Predictions/models_v02')
 
-    feat_imp_week10 = pd.Series.from_csv('Feature_releases/release_v02/feat_imp_week10_xgboost_release_v02.csv')
-    feat_imp_week11 = pd.Series.from_csv('Feature_releases/release_v02/feat_imp_week11_xgboost_release_v02.csv')
-    feat_week10 = list(feat_imp_week10[:50].index)
-    feat_week11 = list(feat_imp_week11[:50].index)
-
 
     start_time = datetime.datetime.now()
 
-    states = town.State.unique()[::-1]
+    states = ['Queretaro de Arteaga'] #town.State.unique()
     for i, state in enumerate(states):
         data = data_brush_for_model(state)
         print(state, 'read')
-        y_eval, m1, m2 = model_building(data, feat_week10, feat_week11)
+        y_eval, m1, m2 = model_building(data)
 
         y_eval.to_csv('Predictions/release_v02/Prediction_%s_v02.csv' % state)
 
