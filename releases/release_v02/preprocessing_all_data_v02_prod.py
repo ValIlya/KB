@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import os
 import unicodedata
+import time
 
 # State included in every split by design
 SPLITS = [['Producto_ID', 'Cliente_ID', 'Ruta_SAK'],
@@ -107,7 +108,7 @@ def lag_generation(df, n_lags=3, widths = [3, 4]):
         df_lag = df_lag.set_index(indexers)[lag_columns]
         df_lag.rename(columns=dict([(value, '%s_%d' % (value, lag)) for value in df_lag.columns]), inplace=True)
         df_lagged = pd.merge(df_lagged, df_lag, 'left', left_on=indexers, right_index=True)
-        print(lag, 'lag done')
+        # print(lag, 'lag done')
 
     df_lagged = wide_lag_generation(df_lagged, widths, lag_columns)
 
@@ -135,7 +136,7 @@ def wide_lag_generation(df, width_range, lag_columns):
         if lag_width >= width_range[0]:
             aggregates = df_lag.groupby(indexers).mean().rename(columns=dict([(value, '%s_%dmean' % (value, lag_width)) for value in df_lag.columns]))
             df_lagged = pd.merge(df_lagged, aggregates, 'left', left_on=indexers, right_index=True)
-            print('%d-wide lag done' % lag_width)
+            # print('%d-wide lag done' % lag_width)
 
     return df_lagged
 
@@ -164,7 +165,7 @@ def preproc(states=None, train=True):
 
     # split data in parts by Producto_ID and calculate lags for each part independantly
 
-    n_parts = int(data.shape[0] / (6 * 10 ** 5))
+    n_parts = int(data.shape[0] / (6 * 10 ** 5)) + 1
 
     products = data.Producto_ID.value_counts().sort_index()
     products_parts = []
@@ -184,7 +185,8 @@ def preproc(states=None, train=True):
     data_parts = [data.loc[data.Producto_ID.isin(prod_set), :] for prod_set in products_parts]
     for i, data_part in enumerate(data_parts):
         data_parts[i] = lag_generation(data_part)
-    data = pd.concat(data_parts)
+        print(i+1, 'parts of lags were calculated')
+    data = pd.concat(data_parts, axis=0)
 
     data = text_encoding(data)
 
@@ -201,8 +203,9 @@ if __name__ == '__main__':
         os.makedirs(out_dir)
 
     town = text_encoding(town_preproc())
-    states = town.State.unique()[:3]
+    states = town.State.unique()[3:]
+    start = time.time()
     for i, state in enumerate(states):
         data_train = preproc(states=[state])
         data_train.to_csv('%strain_%s.csv' % (out_dir, state), index=False)
-        print('%s saved, %d to go' % (state, len(states) - i - 1))
+        print('%s saved, %d to go, elapsed time: %0.1f sec' % (state, len(states) - i - 1, time.time() - start))
