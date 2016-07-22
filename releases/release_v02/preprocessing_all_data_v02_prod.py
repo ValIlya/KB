@@ -140,17 +140,14 @@ def wide_lag_generation(df, width_range, lag_columns):
     return df_lagged
 
 def preproc(states=None, train=True):
-    if train:
-        # df = select_states(states)
-        filelist = os.listdir(working_dir() + 'States/')
-        assert len(filelist) > 0, 'run data_split_by_state.py first'
-        df_list = []
-        for state in states:
-            df_list.append(pd.read_csv(working_dir() + 'States/' + state))
-        df = pd.concat(df_list, axis=0)
-    else:
-        df = pd.read_csv(working_dir() + "test.csv")
-        print('Data read')
+
+    # df = select_states(states)
+    filelist = os.listdir(working_dir() + 'States/')
+    assert len(filelist) > 0, 'run data_split_by_state.py first'
+    df_list = []
+    for state in states:
+        df_list.append(pd.read_csv(working_dir() + 'States/' + state))
+    df = pd.concat(df_list, axis=0)
 
     # town = town_preproc()
     products = products_preproc()
@@ -164,7 +161,30 @@ def preproc(states=None, train=True):
 
     data_test_state = data_test.loc[data_test.Agencia_ID.isin(agencies), :]
     data = pd.concat([data_train, data_test_state], axis=0)
-    data = lag_generation(data)
+
+    # split data in parts by Producto_ID and calculate lags for each part independantly
+
+    n_parts = int(data.shape[0] / (6 * 10 ** 5))
+
+    products = data.Producto_ID.value_counts().sort_index()
+    products_parts = []
+    prod_set = set()
+    cumulative_count = 0
+    count_threshold = int(data.shape[0] / n_parts)
+    for prod, count in products.iteritems():
+        cumulative_count += count
+        prod_set.add(prod)
+        if cumulative_count >= count_threshold:
+            products_parts.append(prod_set)
+            prod_set = set()
+            cumulative_count = 0
+    products_parts.append(prod_set)
+    print('file was splitted into', n_parts, 'parts by product')
+    # Generating lags
+    data_parts = [data.loc[data.Producto_ID.isin(prod_set), :] for prod_set in products_parts]
+    for i, data_part in enumerate(data_parts):
+        data_parts[i] = lag_generation(data_part)
+    data = pd.concat(data_parts)
 
     data = text_encoding(data)
 
