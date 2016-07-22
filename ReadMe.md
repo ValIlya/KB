@@ -6,15 +6,16 @@
 
 ## Скрипты
 
-0. preprocessing.py - приклеены все справочники и нагерены переменные по продукту
-0. preprocessing_time_series.py - предыдущее + лаги по объемам и стоимости продаж
-0. crossval.py - файлик с зафиксированной кросс-валидацией
+0. [preprocessing_time_series.py](scripts/preprocessing_time_series.py) - приклеены все справочники и нагерены переменные по продукту + лаги по объемам и стоимости продаж
+0. [crossval.py](scripts/crossval.py) - устаревший файлик с зафиксированной кросс-валидацией (которая не соотносится с лидербордом)
+0. [gridsearch.py](scripts/gridsearch.py) - переборщик параметров для xgboost (и в принципе, при допиливании, для любой другой модельки)
+0. [**data_split_by_state.py**](scripts/data_split_by_state.py) - очень важный скрипт, который раскидывает трейн на штаты (нужен для сборки любого релиза)
 
 ## Ноутбуки
 
-0. template.ipynb - базовый ноутбук с примером подхвата данных
-0. data_exploration.ipynb - графики, которые первые пришли в голову при обзоре переменных
-0. models_timeseries.ipynb - моделька с использованием лагов
-0. product_clustering.ipynb - кластеризация продуктов
-0. [how_to_find_strong_features.ipynb](how_to_find_strong_features.ipynb) - поиск хороших сплитов
-0. [how_to_preprocess_only_strong_features.ipynb](how_to_preprocess_only_strong_features.ipynb) -  отбор трансофрмаций для генерации фич по всем штатам
+0. [template.ipynb](template.ipynb) - базовый ноутбук с примером подхвата данных
+0. [data_exploration.ipynb](data_exploration/data_exploration.ipynb) - графики, которые первые пришли в голову при обзоре переменных
+0. [product_clustering.ipynb](data_exploration/product_clustering.ipynb) - кластеризация продуктов
+0. [xgboost_v2.ipynb](models/product_clustering.ipynb) - xgboost и подбор параметров
+0. [how_to_find_strong_features.ipynb](releases/release_v02/how_to_find_strong_features.ipynb) - поиск хороших сплитов + пример вызова генератора фич прямо из ноутбука и тут же построение модельки
+0. [how_to_preprocess_only_strong_features.ipynb](how_to_preprocess_only_strong_features.ipynb) - отбор трансофрмаций для генерации фич по всем штатам
