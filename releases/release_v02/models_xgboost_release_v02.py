@@ -16,21 +16,23 @@ pd.options.mode.chained_assignment = None # turn off warnings
 
 town = pts.text_encoding(pts.town_preproc())
 data_test = pd.read_csv(pts.working_dir() + 'test.csv', index_col=0)
+indexers = ['Semana', 'Agencia_ID', 'Canal_ID',
+            'Ruta_SAK', 'Cliente_ID', 'Producto_ID']
 
 def data_brush_for_model(state):
     data_train = pd.read_csv('Feature_releases/release_v02/train_%s.csv' % state)
     # only state from train set
-    agencies = set(town.loc[town.State == state].index)
-
-    data_test_state = data_test.loc[data_test.Agencia_ID.isin(agencies), :]
-    data = pd.concat([data_train, data_test_state], axis=0)
-
-    means_by_split = [x for x in data_train.columns if
-                      'Mean' in x and not (x[-2] == '_' or x[-4:] == 'last')]  # its mean, its not a lag
-    data = data_train.drop([u'Venta_uni_hoy', u'Venta_hoy',
-                                      u'Dev_proxima', u'Demanda_uni_equil', u'Dev_proxima_by_uni', u'No_remains',
-                                      u'Venta_hoy_by_uni'] + means_by_split, axis=1).set_index(u'Semana', append=True)
-    data = data.swaplevel(i=0, j=-1, axis=0)
+    # agencies = set(town.loc[town.State == state].index)
+    #
+    # data_test_state = data_test.loc[data_test.Agencia_ID.isin(agencies), :]
+    # data = pd.concat([data_train, data_test_state], axis=0)
+    data = data_train # test set already included
+    means_by_split = [x for x in data.columns if
+                      'Mean' in x and not (x[-2] == '_' or x[-4:] == 'mean')]  # its mean, its not a lag
+    data = data.drop(['Log_Dev_proxima', 'Log_Dev_uni_proxima',
+                      'Log_Venta_hoy', 'Venta_uni_hoy', 'Venta_hoy',
+                      'Dev_proxima', 'Demanda_uni_equil', 'Dev_proxima_by_uni', 'No_remains',
+                      'Venta_hoy_by_uni'] + means_by_split, axis=1).set_index('Semana')
 
     return data
 
@@ -71,9 +73,11 @@ def model_building(data):
     xgb_model2.set_params(**param2)
     xgb_model2.fit(X_train2, y_train)
 
-    y_eval10 = pd.Series(xgb_model.predict(X_eval.loc[10, :]), index=X_eval.loc[10, :].index)
-    y_eval11 = pd.Series(xgb_model2.predict(X_eval2.loc[11, :]), index=X_eval2.loc[11, :].index)
-    y_eval = pd.concat([y_eval10, y_eval11], axis=0).to_frame('Log_Demanda')
+    y_eval10 = X_eval.loc[10, indexers[1:]]
+    y_eval10['Log_Demanda'] = xgb_model.predict(X_eval.loc[10, :])
+    y_eval11 = X_eval.loc[11, indexers[1:]]
+    y_eval11['Log_Demanda'] = xgb_model2.predict(X_eval2.loc[11, :])
+    y_eval = pd.concat([y_eval10, y_eval11], axis=0)
 
     return y_eval, xgb_model, xgb_model2
 
@@ -94,6 +98,7 @@ if __name__ == '__main__':
     start_time = datetime.datetime.now()
 
     states = town.State.unique()
+    print(states)
     for i, state in enumerate(states):
         data = data_brush_for_model(state)
         print(state, 'read')
@@ -110,10 +115,10 @@ if __name__ == '__main__':
 
     print('Final submit generating')
     state_files = ['Predictions/release_v02/Prediction_%s_v02.csv' % state for state in states]
-    test_states = pd.concat([pd.read_csv(f, index_col=0) for f in state_files])
-    test_data = pd.merge(data_test, test_states, how='left', right_index=True, left_index=True)
-    pivot = test_data.groupby('Agencia_ID').Log_Demanda.apply(lambda ser: ser.isnull().mean())
-    assert ((pivot>0).sum() == 0), 'Not all id were predicted'
+    test_states = pd.concat([pd.read_csv(f) for f in state_files])
+    test_data = pd.merge(data_test, y_eval.set_index(indexers), 'inner',
+                         left_on=indexers, right_index=True)
+    assert test_data.shape[0] == data_test.shape[0], 'Not all id were predicted'
     test_data['Demanda_uni_equil'] = test_data.Log_Demanda.apply(np.expm1)
     test_data.index.name = 'id'
     test_data[['Demanda_uni_equil']].to_csv('Predictions/release_v02/Prediction_v02.csv')
