@@ -11,6 +11,9 @@ import time
 # State included in every split by design
 SPLITS = [['Producto_ID', 'Cliente_ID', 'Ruta_SAK'],
           ['Producto_ID', 'Cliente_ID', 'Agencia_ID']]
+INDEXERS = ['Semana', 'Agencia_ID', 'Canal_ID',
+            'Ruta_SAK', 'Cliente_ID', 'Producto_ID']
+
 
 def working_dir():
     if 'ilya' in os.getcwd():
@@ -93,8 +96,7 @@ def products_preproc():
     return products
 
 def lag_generation(df, n_lags=3, widths = [3, 4]):
-    indexers = [u'Semana', u'Agencia_ID', u'Canal_ID',
-                u'Ruta_SAK', u'Cliente_ID', u'Producto_ID']
+    indexers = INDEXERS
 
     #only volumes are lagged
     lag_columns = [x for x in df.columns if ('Demanda' in x) or ('No_remains' in x) or
@@ -116,10 +118,9 @@ def lag_generation(df, n_lags=3, widths = [3, 4]):
 
 
 def wide_lag_generation(df, width_range, lag_columns):
-    # means trought several weeks
+    # means trough several weeks
 
-    indexers = [u'Semana', u'Agencia_ID', u'Canal_ID',
-                    u'Ruta_SAK', u'Cliente_ID', u'Producto_ID']
+    indexers = INDEXERS
 
     df_lagged = df
     #first is a necessary base part - previous week
@@ -150,10 +151,10 @@ def preproc(states=None, train=True):
         df_list.append(pd.read_csv(working_dir() + 'States/' + state))
     df = pd.concat(df_list, axis=0)
 
-    # town = town_preproc()
+    town = text_encoding(town_preproc())
     products = products_preproc()
-    # data_train = pd.merge(df, town, 'left', left_on='Agencia_ID', right_index=True)
-    data_train = pd.merge(df, products, 'left', left_on='Producto_ID', right_index=True)
+    data_train = pd.merge(df, town, 'left', left_on='Agencia_ID', right_index=True)
+    data_train = pd.merge(data_train, products, 'left', left_on='Producto_ID', right_index=True)
 
     data_train = volumes_preproc(data_train)
 
@@ -165,7 +166,7 @@ def preproc(states=None, train=True):
 
     # split data in parts by Producto_ID and calculate lags for each part independantly
 
-    n_parts = int(data.shape[0] / (6 * 10 ** 5)) + 1
+    n_parts = int(data.shape[0] / (6 * 10 ** 4)) + 1
 
     products = data.Producto_ID.value_counts().sort_index()
     products_parts = []
@@ -201,7 +202,6 @@ if __name__ == '__main__':
     out_dir = working_dir() + 'Feature_releases/release_v02/'
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
-
     town = text_encoding(town_preproc())
     states = town.State.unique()
     print(states)

@@ -143,7 +143,7 @@ def text_encoding(data):
                         d_enc[s] = encoded
 
             data[c] = data[c].apply(lambda x: d_enc.get(x, x))
-    print('Data endoded')
+    print('Data encoded')
     return data
 
 
