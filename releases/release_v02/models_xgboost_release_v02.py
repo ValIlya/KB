@@ -106,8 +106,8 @@ if __name__ == '__main__':
 
         y_eval.to_csv('Predictions/release_v02/Prediction_%s_v02.csv' % state)
 
-        with open('Predictions/models_v02/xgboost_week_%s.pkl' % state, 'wb') as model1, \
-             open('Predictions/models_v02/xgboost_week_%s.pkl' % state, 'wb') as model2:
+        with open('Predictions/models_v02/xgboost_week10_%s.pkl' % state, 'wb') as model1, \
+             open('Predictions/models_v02/xgboost_week11_%s.pkl' % state, 'wb') as model2:
             pickle.dump(m1, model1, 2)
             pickle.dump(m2, model2, 2)
 

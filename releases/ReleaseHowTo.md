@@ -20,11 +20,17 @@
 
 * [preprocessing_all_data_v02.py](release_v02/preprocessing_all_data_v02.py) - собирает средние логарифмов, приклеивает тест-сет, лаги и сохраняем
 * [preprocessing_all_data_v02_2.py](release_v02/preprocessing_all_data_v02_2.py) - меньше лагов и сплитов, оставлены самые важные
-* [preprocessing_all_data_v02_prod.py](release_v02/preprocessing_all_data_v02_prod.py) - здесь оставим только топ50 для модели
-* [models_xgboost_release_v02.py](release_v02/models_xgboost_release_v02.py) - готовый скоринг по топ50 фичам
+* [preprocessing_all_data_v02_prod.py](release_v02/preprocessing_all_data_v02_prod.py) - генерация preprocessing_all_data_v02_2.py с оптимизацией
+* [models_xgboost_release_v02.py](release_v02/models_xgboost_release_v02.py) - готовый скоринг по фичам из preprocessing_all_data_v02_prod.py
 * [rf_feature_importance_v02.ipynb](release_v02/rf_feature_importance_v02.ipynb) - оценка качества фичей
 
 
-Скрипт + исследование по важности сплитов и лагов:
+Задел на будущее: Скрипт + исследование по важности сплитов и лагов:
 * [preprocessing_all_data_v02_3.py](release_v02/preprocessing_all_data_v02_3.py) - выкидываем слабые переменные, **изменено название средних за n последние недель** - с заделом на новую переменную "последнее известное"
 * [how_to_find_strong_features.ipynb](release_v02/how_to_find_strong_features.ipynb) - поиск хороших сплитов
+
+##3 релиз: 
+Гипотезы и не перечислить вот так: https://trello.com/c/OEEvMu6R
+
+* [preprocessing_all_data_v03_1.py](release_v03/preprocessing_all_data_v02.py) - пока что повторяет продакшн 2 релиза с незначительными изменениями - **для проверки новых фич изменяйте его**
+* [feature_test.ipynb](release_v03/feature_test.ipynb) - пример расчета фич прямо в ноутбуке и валидация модельки на них
