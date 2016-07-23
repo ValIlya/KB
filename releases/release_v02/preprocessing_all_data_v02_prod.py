@@ -163,7 +163,7 @@ def preproc(states=None, train=True):
     data_test_state = data_test.loc[data_test.Agencia_ID.isin(agencies), :]
     data = pd.concat([data_train, data_test_state], axis=0)
 
-    # split data in parts by Producto_ID and calculate lags for each part independantly
+    # split data in parts by Producto_ID and calculate lags for each part independently
 
     n_parts = int(data.shape[0] / (6 * 10 ** 5)) + 1
 
