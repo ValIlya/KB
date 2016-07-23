@@ -9,10 +9,26 @@ import unicodedata
 import time
 
 # State included in every split by design
-SPLITS = [['Producto_ID', 'Cliente_ID', 'Ruta_SAK'],
-          ['Producto_ID', 'Cliente_ID', 'Agencia_ID']]
+SPLITS = [['Producto_ID', 'Cliente_ID', 'Canal_ID', 'Agencia_ID', 'Ruta_SAK'],
+              ['Producto_ID', 'Cliente_ID', 'Canal_ID', 'Agencia_ID'],
+              ['Producto_ID', 'Cliente_ID', 'Canal_ID', 'Ruta_SAK'],
+              ['Producto_ID', 'Cliente_ID', 'Agencia_ID', 'Ruta_SAK'],
+              ['Producto_ID', 'Canal_ID', 'Agencia_ID', 'Ruta_SAK'],
+              ['Cliente_ID', 'Canal_ID', 'Agencia_ID', 'Ruta_SAK'],
+
+              ['Producto_ID', 'Cliente_ID', 'Ruta_SAK'],
+              ['Producto_ID', 'Cliente_ID', 'Agencia_ID'],
+              ['Producto_ID', 'Ruta_SAK'],
+              ['brand', 'Cliente_ID', 'Ruta_SAK', 'Agencia_ID'],
+              ['Producto_ID', 'Cliente_ID', 'Town']]
+
+
 INDEXERS = ['Semana', 'Agencia_ID', 'Canal_ID',
             'Ruta_SAK', 'Cliente_ID', 'Producto_ID']
+
+LAG_BATCH_SIZE = 6 * 10 ** 4
+N_LAGS = 6
+LAG_WIDTH_RANGE = [2, 6]
 
 
 def working_dir():
@@ -45,11 +61,10 @@ def volumes_preproc(data):
         # data['Ordered'] = data.Venta_uni_hoy.apply(np.sign)
     if 'Demanda_uni_equil' in data.columns:
         data['Log_Demanda'] = data.Demanda_uni_equil.apply(np.log1p)
-        data = logmeans_compute(data)
     return data
 
 
-def logmeans_compute(data, splits=SPLITS):
+def splits_compute(data, splits=SPLITS):
     for split in splits:
         raw_cols = ['Log_Demanda', 'Log_Venta_uni_hoy', 'No_remains', 'Ordered']
         raw_cols = [x for x in raw_cols if x in data.columns]
@@ -95,12 +110,8 @@ def products_preproc():
 
     return products
 
-def lag_generation(df, n_lags=3, widths = [3, 4]):
+def lag_generation(df, lag_columns, n_lags=N_LAGS):
     indexers = INDEXERS
-
-    #only volumes are lagged
-    lag_columns = [x for x in df.columns if ('Demanda' in x) or ('No_remains' in x) or
-                   ('Venta' in x) or ('Dev_proxima' in x) or ('Ordered' in x)]
 
     df_lagged = df.copy()
 
@@ -112,12 +123,10 @@ def lag_generation(df, n_lags=3, widths = [3, 4]):
         df_lagged = pd.merge(df_lagged, df_lag, 'left', left_on=indexers, right_index=True)
         # print(lag, 'lag done')
 
-    df_lagged = wide_lag_generation(df_lagged, widths, lag_columns)
-
     return df_lagged
 
 
-def wide_lag_generation(df, width_range, lag_columns):
+def wide_lag_generation(df, lag_columns, width_range = LAG_WIDTH_RANGE):
     # means trough several weeks
 
     indexers = INDEXERS
@@ -141,32 +150,15 @@ def wide_lag_generation(df, width_range, lag_columns):
 
     return df_lagged
 
-def preproc(states=None, train=True):
 
-    # df = select_states(states)
-    filelist = os.listdir(working_dir() + 'States/')
-    assert len(filelist) > 0, 'run data_split_by_state.py first'
-    df_list = []
-    for state in states:
-        df_list.append(pd.read_csv(working_dir() + 'States/' + state))
-    df = pd.concat(df_list, axis=0)
+def lag_batch_generation(data):
 
-    town = text_encoding(town_preproc())
-    products = products_preproc()
-    data_train = pd.merge(df, town, 'left', left_on='Agencia_ID', right_index=True)
-    data_train = pd.merge(data_train, products, 'left', left_on='Producto_ID', right_index=True)
+    #only volumes are lagged
+    lag_columns = [x for x in data.columns if ('Demanda' in x) or ('No_remains' in x) or
+                   ('Venta' in x) or ('Dev_proxima' in x) or ('Ordered' in x)]
 
-    data_train = volumes_preproc(data_train)
-
-    agencies = set(town.loc[town.State == state].index)
-    data_test = pd.read_csv(working_dir() + 'test.csv', index_col=0)
-
-    data_test_state = data_test.loc[data_test.Agencia_ID.isin(agencies), :]
-    data = pd.concat([data_train, data_test_state], axis=0)
-
-    # split data in parts by Producto_ID and calculate lags for each part independantly
-
-    n_parts = int(data.shape[0] / (6 * 10 ** 4)) + 1
+    # split data in parts by Producto_ID and calculate lags for each part independently
+    n_parts = int(data.shape[0] / LAG_BATCH_SIZE) + 1
 
     products = data.Producto_ID.value_counts().sort_index()
     products_parts = []
@@ -185,9 +177,39 @@ def preproc(states=None, train=True):
     # Generating lags
     data_parts = [data.loc[data.Producto_ID.isin(prod_set), :] for prod_set in products_parts]
     for i, data_part in enumerate(data_parts):
-        data_parts[i] = lag_generation(data_part)
+        data_parts[i] = lag_generation(data_part, lag_columns)
+        data_parts[i] = wide_lag_generation(data_parts[i], lag_columns)
         print(i+1, 'parts of lags were calculated')
     data = pd.concat(data_parts, axis=0)
+
+    return data
+
+def preproc(states=None):
+    filelist = os.listdir(working_dir() + 'States/')
+    assert len(filelist) > 0, 'run data_split_by_state.py first'
+    df_list = []
+    for state in states:
+        # may be several states
+        df_list.append(pd.read_csv(working_dir() + 'States/' + state))
+    df = pd.concat(df_list, axis=0)
+
+    town = text_encoding(town_preproc())
+    products = text_encoding(products_preproc())
+    # select state from test
+    df_test = pd.read_csv(working_dir() + 'test.csv', index_col=0)
+    data_test = pd.merge(df_test, town, 'left', left_on='Agencia_ID', right_index=True)
+    data_test_state = data_test.loc[data_test.State.isin(states), :]
+
+    data_train = pd.merge(df, town, 'left', left_on='Agencia_ID', right_index=True)
+    data = pd.concat([data_train, data_test_state], axis=0)
+
+    data = pd.merge(data, products, 'left', left_on='Producto_ID', right_index=True)
+
+    data = volumes_preproc(data)
+    data = splits_compute(data)
+
+    # split data in parts by Producto_ID and calculate lags for each part independently
+    data = lag_batch_generation(data)
 
     data = text_encoding(data)
 
