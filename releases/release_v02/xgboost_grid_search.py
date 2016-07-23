@@ -55,15 +55,18 @@ if __name__ == '__main__':
     if not os.path.exists('ParameterTuning/input_parameters_v02'):
         os.makedirs('ParameterTuning/input_parameters_v02')
 
+    # first argument is the name of the parameter file
     parameters_file = sys.argv[1]
     directory_path = 'ParameterTuning/results_v02/%s/'%parameters_file
 
     assert not os.path.exists(directory_path), '%s already exists' % directory_path
     os.makedirs(directory_path)
 
+    # load parameters
     with open('ParameterTuning/input_parameters_v02/%s'%parameters_file, 'r') as f:
         state, parameters, tuning_parameters, weeks = eval(f.read())
 
+    # stdout to logfile
     sys.stdout = Logger(directory_path + "logfile.txt")
 
     print('State:', state)
@@ -73,8 +76,8 @@ if __name__ == '__main__':
         print(param)
     print()
 
+    # load data, split train and validation
     data = load_data(state)
-
     X_train_week8 = data.loc[3:7, :].drop('Log_Demanda', axis=1)
     y_train = data.loc[3:7, :]['Log_Demanda']
     X_test_week8 = data.loc[8:9, :].drop('Log_Demanda', axis=1)
@@ -91,24 +94,30 @@ if __name__ == '__main__':
 
     start_time = datetime.datetime.now()
 
+    # in series tune different bach of parameters
     for stage, tuning_param in enumerate(tuning_parameters):
         print('Stage', stage)
         print('Tuning parameters:', tuning_param)
 
         if weeks == '8' or weeks == 'all':
             print('Week 8')
+
             gs_week8 = grid_search_xgboost(best_param_week8, tuning_param,
                                      X_train_week8, X_test_week8, y_train, y_test_week8)
             print('Best', gs_week8.best_params_)
             print('Train score: ', gs_week8.best_score_)
+
+            # save GridSearch and all models in it
             with open(directory_path + 'gs_stage%d_week8'%stage, 'wb') as p:
                 pickle.dump(gs_week8, p, 2)
 
+            # update best_param for next stage
             for param in gs_week8.best_params_:
                 best_param_week8[param] = gs_week8.best_params_[param]
             print('Best param week8 stage%d:'%stage, best_param_week8)
             print('Time:',  datetime.datetime.now() - start_time)
 
+        # same for 9 week
         if weeks == '9' or weeks == 'all':
             print('Week 9')
             gs_week9 = grid_search_xgboost(best_param_week9, tuning_param,
