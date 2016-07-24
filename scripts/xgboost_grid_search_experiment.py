@@ -34,7 +34,7 @@ def grid_search_xgboost(param, tuning_param, X_train, X_test, y_train, y_test):
     return gs
 
 
-def XGBoostGridSearchExperiment(data, experiment_name, default_param, tuning_parameters, weeks='all'):
+def XGBoostGridSearchExperiment(data, default_param, tuning_parameters, weeks='all', experiment_name='experiment'):
     os.chdir(pts.working_dir())
 
     if not os.path.exists('ParameterTuning'):
@@ -45,13 +45,22 @@ def XGBoostGridSearchExperiment(data, experiment_name, default_param, tuning_par
     # first argument is the name of the parameter file
     directory_path = 'ParameterTuning/experiments/%s/' % experiment_name
 
-    assert not os.path.exists(directory_path), \
-        "Experiment with name '%s' already exists" % experiment_name
-    os.makedirs(directory_path)
+    # create directory for experiment
+    if not os.path.exists(directory_path):
+        os.makedirs(directory_path)
+    else:
+        file_num = 1    # if already exists add number
+        directory_path = directory_path[:-1] + str(file_num) + '/'
+        while os.path.exists(directory_path):
+            file_num += 1
+            directory_path = directory_path[:-1] + str(file_num) + '/'
+        os.makedirs(directory_path)
 
     # stdout to logfile
     oldstdout = sys.stdout
     sys.stdout = Logger(directory_path + "logfile.txt")
+
+    print('Directory %s created'%directory_path)
 
     print('Default parameters:', default_param)
     print('Tuning parameters:')
