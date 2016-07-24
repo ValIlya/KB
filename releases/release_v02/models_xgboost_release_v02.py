@@ -116,10 +116,11 @@ if __name__ == '__main__':
     print('Final submit generating')
     state_files = ['Predictions/release_v02/Prediction_%s_v02.csv' % state for state in states]
     test_states = pd.concat([pd.read_csv(f) for f in state_files])
-    test_data = pd.merge(data_test, y_eval.set_index(indexers), 'inner',
+    test_data = pd.merge(data_test, test_states.set_index(indexers), 'inner',
                          left_on=indexers, right_index=True)
     assert test_data.shape[0] == data_test.shape[0], 'Not all id were predicted'
     test_data['Demanda_uni_equil'] = test_data.Log_Demanda.apply(np.expm1)
     test_data.index.name = 'id'
-    test_data[['Demanda_uni_equil']].to_csv('Predictions/release_v02/Prediction_v02.csv')
+    test_data.loc[test_data['Demanda_uni_equil'] < 0, 'Demanda_uni_equil'] = 0
+    test_data[['Demanda_uni_equil']].to_csv('Predictions/release_v02/Prediction_v02_nonnegative.csv', float_format='%.5f')
     print('Final submit saved')

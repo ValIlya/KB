@@ -27,8 +27,8 @@ INDEXERS = ['Semana', 'Agencia_ID', 'Canal_ID',
             'Ruta_SAK', 'Cliente_ID', 'Producto_ID']
 
 LAG_BATCH_SIZE = 6 * 10 ** 4
-N_LAGS = 6
-LAG_WIDTH_RANGE = [2, 6]
+N_LAGS = 5
+LAG_WIDTH_RANGE = [3, 6]
 
 
 def working_dir():
@@ -134,10 +134,9 @@ def wide_lag_generation(df, lag_columns, width_range = LAG_WIDTH_RANGE):
     df_lagged = df
     #first is a necessary base part - previous week
     df_lag_part = df.copy()
-    df_lag_part.Semana = df_lag_part.Semana + 1
     df_lag = df_lag_part[indexers+lag_columns]
 
-    for lag_width in range(2, width_range[1] + 1):
+    for lag_width in range(1, width_range[1] + 1):
         df_lag_part = df.copy()
         df_lag_part.Semana = df_lag_part.Semana + lag_width
         df_lag_part = df_lag_part.loc[df_lag_part.Semana.isin(set(range(3, 12))), indexers+lag_columns]
@@ -151,11 +150,11 @@ def wide_lag_generation(df, lag_columns, width_range = LAG_WIDTH_RANGE):
     return df_lagged
 
 
-def lag_batch_generation(data):
+def lag_batch_generation(data, cur_week_delete = True):
 
     #only volumes are lagged
     lag_columns = [x for x in data.columns if ('Demanda' in x) or ('No_remains' in x) or
-                   ('Venta' in x) or ('Dev_proxima' in x) or ('Ordered' in x)]
+                   ('Venta' in x) or ('Dev_proxima' in x) or ('Ordered' in x) or ('Dev_uni_proxima' in x)]
 
     # split data in parts by Producto_ID and calculate lags for each part independently
     n_parts = int(data.shape[0] / LAG_BATCH_SIZE) + 1
@@ -176,12 +175,18 @@ def lag_batch_generation(data):
     print('file was splitted into', n_parts, 'parts by product')
     # Generating lags
     data_parts = [data.loc[data.Producto_ID.isin(prod_set), :] for prod_set in products_parts]
-    for i, data_part in enumerate(data_parts):
-        data_parts[i] = lag_generation(data_part, lag_columns)
-        data_parts[i] = wide_lag_generation(data_parts[i], lag_columns)
+    for i in range(len(data_parts)):
+        tmp = wide_lag_generation(data_parts[i], lag_columns)
+        new_cols = list(tmp.columns[data_parts[i].shape[1]+1:])
+        data_parts[i] = tmp
+        #generate lags over wide lags
+        data_parts[i] = lag_generation(data_parts[i], lag_columns + new_cols)
         print(i+1, 'parts of lags were calculated')
     data = pd.concat(data_parts, axis=0)
-
+    if cur_week_delete:
+        features_to_delete = [x for x in lag_columns + new_cols if x != 'Log_Demanda']
+        data.drop(features_to_delete, axis=1, inplace=True)
+        print('Current week features deleted')
     return data
 
 def preproc(states=None):
