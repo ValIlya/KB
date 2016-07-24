@@ -30,6 +30,8 @@ LAG_BATCH_SIZE = 6 * 10 ** 4
 N_LAGS = 4
 LAG_WIDTH_RANGE = [3, 5]
 
+OUT_FEATURES = []
+
 def working_dir():
     if 'ilya' in os.getcwd():
         directory = '/Users/ilya/Documents/Kaggle_Bimbo/'
@@ -180,12 +182,15 @@ def lag_batch_generation(data, cur_week_delete = True):
         data_parts[i] = tmp
         #generate lags over wide lags
         data_parts[i] = lag_generation(data_parts[i], lag_columns + new_cols)
+        out_features = []
+        for j, f in enumerate(OUT_FEATURES):
+            if f in data_parts[i].columns:
+                out_features += [f]
+            else:
+                print(j, f, 'not in data')
+        data_parts[i] = data_parts[i][out_features]
         print(i+1, 'parts of lags were calculated')
     data = pd.concat(data_parts, axis=0)
-    if cur_week_delete:
-        features_to_delete = [x for x in lag_columns + new_cols if x != 'Log_Demanda']
-        data.drop(features_to_delete, axis=1, inplace=True)
-        print('Current week features deleted')
     return data
 
 def preproc(states=None):
@@ -225,9 +230,16 @@ if __name__ == '__main__':
     out_dir = working_dir() + 'Feature_releases/'
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
+
+    OUT_FEATURES = np.unique(pd.read_csv(out_dir+'/important_features_v03.tsv', header = None)[0].tolist() + \
+                             ['Log_Demanda'] + \
+                            INDEXERS)
+
+    print(len(OUT_FEATURES), 'features to save:', OUT_FEATURES[:5])
     out_dir = working_dir() + 'Feature_releases/release_v03/'
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
+
     town = text_encoding(town_preproc())
     states = town.State.unique()[5:9]
     print(states)

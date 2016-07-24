@@ -34,6 +34,8 @@
 
 * [preprocessing_all_data_v03_1.py](release_v03/preprocessing_all_data_v02.py) - много сплитов и лагов - **для проверки новых фич изменяйте его**
 * [feature_test.ipynb](release_v03/feature_test.ipynb) - пример расчета фич прямо в ноутбуке и валидация модельки на них
+* [preprocessing_all_data_v03_1.py](release_v03/preprocessing_all_data_v03_1.py) - сохранение только топ50 фич
+* [models_xgboost_release_v03.py](release_v03/models_xgboost_release_v03.py) - промежуточная моделька, для понимания качества валидации
 
 ## Общий вид решения
 
