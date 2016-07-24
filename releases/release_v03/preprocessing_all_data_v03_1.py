@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import os
 import unicodedata
-import time
+import datetime
 
 # State included in every split by design
 SPLITS = [['Producto_ID', 'Cliente_ID', 'Canal_ID', 'Agencia_ID', 'Ruta_SAK'],
@@ -27,8 +27,8 @@ INDEXERS = ['Semana', 'Agencia_ID', 'Canal_ID',
             'Ruta_SAK', 'Cliente_ID', 'Producto_ID']
 
 LAG_BATCH_SIZE = 6 * 10 ** 4
-N_LAGS = 5
-LAG_WIDTH_RANGE = [3, 6]
+N_LAGS = 4
+LAG_WIDTH_RANGE = [3, 5]
 
 
 def working_dir():
@@ -226,14 +226,14 @@ if __name__ == '__main__':
     out_dir = working_dir() + 'Feature_releases/'
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
-    out_dir = working_dir() + 'Feature_releases/release_v02/'
+    out_dir = working_dir() + 'Feature_releases/release_v03/'
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
     town = text_encoding(town_preproc())
-    states = town.State.unique()
+    states = town.State.unique()[5:9]
     print(states)
-    start = time.time()
+    start_time = datetime.datetime.now()
     for i, state in enumerate(states):
         data_train = preproc(states=[state])
         data_train.to_csv('%strain_%s.csv' % (out_dir, state), index=False)
-        print('%s saved, %d to go, elapsed time: %0.1f min' % (state, len(states) - i - 1, (time.time() - start)/60))
+        print('%s saved, %d to go, elapsed time:' % (state, len(states) - i - 1), datetime.datetime.now() - start_time)
