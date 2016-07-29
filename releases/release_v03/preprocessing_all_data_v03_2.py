@@ -235,7 +235,7 @@ if __name__ == '__main__':
                              ['Log_Demanda'] + \
                             INDEXERS)
 
-    print(len(OUT_FEATURES), 'features to save:', OUT_FEATURES[:5])
+    print(len(OUT_FEATURES), 'features to save:', OUT_FEATURES[:5], '...')
     out_dir = working_dir() + 'Feature_releases/release_v03/'
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
